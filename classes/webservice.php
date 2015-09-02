@@ -139,9 +139,8 @@ class mod_zoom_webservice {
      * @return bool
      */
     public function user_getbyemail($email) {
-        $config = get_config('mod_zoom');
-
-        $allowedtypes = explode(',', $config->logintypes);
+        $logintypes = get_config('mod_zoom', 'logintypes');
+        $allowedtypes = explode(',', $logintypes);
 
         $url = 'user/getbyemail';
 
