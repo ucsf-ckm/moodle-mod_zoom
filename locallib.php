@@ -201,15 +201,25 @@ function zoom_get_state($zoom) {
 /**
  * Get the Zoom id of the currently logged-in user.
  *
+ * @param boolean $required If true, will error if the user doesn't have a Zoom account.
  * @return string
  */
-function zoom_get_user_id() {
+function zoom_get_user_id($required = true) {
     global $USER;
-    $service = new mod_zoom_webservice();
-    if (!$service->user_getbyemail($USER->email)) {
-        zoom_print_error('user/getbyemail', $service->lasterror);
+
+    $cache = cache::make('mod_zoom', 'zoomid');
+    if (!($zoomuserid = $cache->get($USER->id))) {
+        $zoomuserid = false;
+        $service = new mod_zoom_webservice();
+        if ($service->user_getbyemail($USER->email)) {
+            $zoomuserid = $service->lastresponse->id;
+        } else if ($required) {
+            zoom_print_error('user/getbyemail', $service->lasterror);
+        }
+        $cache->set($USER->id, $zoomuserid);
     }
-    return $service->lastresponse->id;
+
+    return $zoomuserid;
 }
 
 /**

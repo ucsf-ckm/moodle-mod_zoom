@@ -55,16 +55,7 @@ $PAGE->set_heading(format_string($course->fullname));
  * $PAGE->add_body_class('zoom-'.$somevar);
  */
 
-$cache = cache::make('mod_zoom', 'zoomid');
-if (!($zoomuserid = $cache->get($USER->id))) {
-    $zoomuserid = false;
-    $service = new mod_zoom_webservice();
-    // Not an error if this fails, since people don't need a Zoom account to view/join meetings.
-    if ($service->user_getbyemail($USER->email)) {
-        $zoomuserid = $service->lastresponse->id;
-    }
-    $cache->set($USER->id, $zoomuserid);
-}
+$zoomuserid = zoom_get_user_id(false);
 $userishost = ($zoomuserid == $zoom->host_id);
 
 $stryes = get_string('yes');

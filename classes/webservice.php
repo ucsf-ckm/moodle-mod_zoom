@@ -388,6 +388,7 @@ class mod_zoom_webservice {
         // Required parameters.
         foreach ($required as $field) {
             if (!isset($data[$field])) {
+                $this->lasterror = 'Missing required parameter.';
                 return false;
             }
         }
