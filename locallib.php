@@ -223,6 +223,46 @@ function zoom_get_user_id($required = true) {
 }
 
 /**
+ * Check if the error indicates that a meeting is gone.
+ *
+ * @param string $error
+ * @return bool
+ */
+function zoom_is_meeting_gone_error($error) {
+    // If the meeting's owner/user cannot be found, we consider the meeting to be gone.
+    return strpos($error, 'not found') !== false || zoom_is_user_not_found_error($error);
+}
+
+/**
+ * Check if the error indicates that a user is not found.
+ *
+ * @param string $error
+ * @return bool
+ */
+function zoom_is_user_not_found_error($error) {
+    return strpos($error, 'User not exist') !== false;
+}
+
+/**
+ * Return the string parameter for zoomerr_meetingnotfound.
+ *
+ * @param string $cmid
+ * @return stdClass
+ */
+function zoom_meetingnotfound_param($cmid) {
+    // Provide links to recreate and delete.
+    $recreate = new moodle_url('/mod/zoom/recreate.php', array('id' => $cmid, 'sesskey' => sesskey()));
+    $delete = new moodle_url('/course/mod.php', array('delete' => $cmid, 'sesskey' => sesskey()));
+
+    // Convert links to strings and pass as error parameter.
+    $param = new stdClass();
+    $param->recreate = $recreate->out();
+    $param->delete = $delete->out();
+
+    return $param;
+}
+
+/**
  * Update local copy of zoom meetings by getting the latest Zoom data through the API.
  *
  * @param Traversable $zooms Traversable collection of zoom objects, perhaps from a recordset

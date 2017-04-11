@@ -52,7 +52,7 @@ class mod_zoom_mod_form extends moodleform_mod {
         }
         $zoomuser = $service->lastresponse;
 
-        // If updating, ensure we can find the meeting on Zoom.
+        // If updating, ensure we can get the meeting on Zoom.
         // If the meeting can't be found, zoom_print_error will offer to recreate the meeting on Zoom.
         $isnew = empty($this->_cm);
         if (!$isnew && !$service->get_meeting_info($this->current)) {

@@ -58,6 +58,9 @@ $PAGE->set_heading(format_string($course->fullname));
 $zoomuserid = zoom_get_user_id(false);
 $userishost = ($zoomuserid == $zoom->host_id);
 
+$service = new mod_zoom_webservice();
+$showrecreate = !$service->get_meeting_info($zoom) && zoom_is_meeting_gone_error($service->lasterror);
+
 $stryes = get_string('yes');
 $strno = get_string('no');
 $strstart = get_string('start_meeting', 'mod_zoom');
@@ -77,6 +80,19 @@ $strall = get_string('allmeetings', 'mod_zoom');
 
 // Output starts here.
 echo $OUTPUT->header();
+
+if ($showrecreate) {
+    // Only show recreate/delete links in the message for users that can edit.
+    $context = context_module::instance($cm->id);
+    if (has_capability('mod/zoom:addinstance', $context)) {
+        $message = get_string('zoomerr_meetingnotfound', 'mod_zoom', zoom_meetingnotfound_param($cm->id));
+        $style = 'notifywarning';
+    } else {
+        $message = get_string('zoomerr_meetingnotfound_info', 'mod_zoom');
+        $style = 'notifymessage';
+    }
+    echo $OUTPUT->notification($message, $style);
+}
 
 echo $OUTPUT->heading(format_string($zoom->name), 2);
 if ($zoom->intro) {

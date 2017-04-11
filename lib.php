@@ -527,6 +527,8 @@ function zoom_extend_settings_navigation(settings_navigation $settingsnav, navig
 function zoom_print_error($apicall, $error, $cmid = -1) {
     global $CFG, $COURSE, $OUTPUT, $PAGE;
 
+    require_once($CFG->dirroot.'/mod/zoom/locallib.php');
+
     // Lang string for the error.
     $errstring = 'zoomerr';
     // Parameter for the lang string.
@@ -572,16 +574,8 @@ function zoom_print_error($apicall, $error, $cmid = -1) {
             case 'meeting/update':
                 if (zoom_is_meeting_gone_error($error)) {
                     $errstring = 'zoomerr_meetingnotfound';
-
-                    // Provide links to recreate and delete.
-                    $recreate = new moodle_url('/mod/zoom/recreate.php',
-                        array('id' => $cmid, 'sesskey' => sesskey()));
-                    $delete = new moodle_url('/course/mod.php',
-                        array('delete' => $cmid, 'sesskey' => sesskey()));
-                    // Convert links to strings and pass as error parameter.
-                    $param = new stdClass();
-                    $param->recreate = $recreate->out();
-                    $param->delete = $delete->out();
+                    $param = zoom_meetingnotfound_param($cmid);
+                    $nexturl = "/mod/zoom/view.php?id=$cmid";
                 }
                 break;
         }
@@ -604,25 +598,4 @@ function zoom_print_error($apicall, $error, $cmid = -1) {
 
     echo $OUTPUT->footer();
     exit(1);
-}
-
-/**
- * Check if the error indicates that a meeting is gone.
- *
- * @param string $error
- * @return bool
- */
-function zoom_is_meeting_gone_error($error) {
-    // If the meeting's owner/user cannot be found, we consider the meeting to be gone.
-    return strpos($error, 'not found') !== false || zoom_is_user_not_found_error($error);
-}
-
-/**
- * Check if the error indicates that a user is not found.
- *
- * @param string $error
- * @return bool
- */
-function zoom_is_user_not_found_error($error) {
-    return strpos($error, 'User not exist') !== false;
 }
