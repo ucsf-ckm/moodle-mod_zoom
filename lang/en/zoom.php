@@ -117,8 +117,8 @@ $string['zoomerr_apisettings_missing'] = 'Please configure the Zoom API key and 
 $string['zoomerr_apiurl_404'] = 'The Zoom API url could not be found; please check the setting.';
 $string['zoomerr_apiurl_error'] = 'The Zoom API could not be contacted; please check your server error log.';
 $string['zoomerr_apiurl_unresolved'] = 'The Zoom API url could not be resolved; please check the setting.';
-$string['zoomerr_meetingnotfound'] = 'This meeting could not be found on Zoom. Unless you <a href="{$a->recreate}">recreate the meeting on Zoom</a>, you may only <a href="{$a->delete}">delete it</a>.';
-$string['zoomerr_meetingnotfound_info'] = 'This meeting could not be found on Zoom. A user with editing capability may recreate or delete it.';
+$string['zoomerr_meetingnotfound'] = 'This meeting has expired. You can <a href="{$a->recreate}">recreate it here</a> or <a href="{$a->delete}">delete it completely</a>.';
+$string['zoomerr_meetingnotfound_info'] = 'This meeting has expired. Please contact the meeting host if you have questions.';
 $string['zoomerr_usernotfound'] = 'You are using Zoom for the first time, so you must enable your Zoom account by logging in to <a href="{$a}" target="_blank">{$a}</a> with your login credentials. Once you\'ve activated your Zoom account, reload this page and continue setting up your meeting.';
 $string['zoomurl'] = 'Zoom home page URL';
 $string['zoomurl_desc'] = '';
