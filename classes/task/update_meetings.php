@@ -76,13 +76,10 @@ class update_meetings extends \core\task\scheduled_task {
                 $response = $service->get_meeting_webinar_info($zoom->meeting_id, $zoom->webinar);
                 $gotinfo = true;
             } catch (\moodle_exception $error) {
-                // Checks whether the meeting is missing on Zoom or user doesn't exist under UCLA.
-                if (strpos($error, 'is not found or has expired') === false && strpos($error, 'User not belong to this account') === false) {
-                    throw $error;
-                } else {
-                    $zoom->exists_on_zoom = false;
-                    $DB->update_record('zoom', $zoom);
-                }
+                // Outputs error and then goes to next meeting.
+                $zoom->exists_on_zoom = false;
+                $DB->update_record('zoom', $zoom);
+                mtrace('Error updating Zoom meeting with meeting_id ' . $zoom->meeting_id . ': ' . $error);
             }
             if ($gotinfo) {
                 $changed = false;
