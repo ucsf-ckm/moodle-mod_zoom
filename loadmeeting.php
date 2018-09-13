@@ -25,14 +25,17 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
+global $CFG, $DB;
+
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 require_once($CFG->libdir . '/gradelib.php');
 require_once($CFG->libdir . '/moodlelib.php');
+require_once(dirname(__FILE__).'/locallib.php');
 
 // Course_module ID.
 $id = required_param('id', PARAM_INT);
-// We cast because PARAM_BOOL doesn't actually return a boolean, it returns a 1 or 0.
-$userishost = (bool) required_param('userishost', PARAM_BOOL);
 if ($id) {
     $cm         = get_coursemodule_from_id('zoom', $id, 0, false, MUST_EXIST);
     $course     = get_course($cm->course);
@@ -40,6 +43,7 @@ if ($id) {
 } else {
     print_error('You must specify a course_module ID');
 }
+$userishost = (zoom_get_user_id() == $zoom->host_id);
 
 require_login($course, true, $cm);
 
@@ -70,5 +74,6 @@ if ($userishost) {
 }
 
 // Record user's clicking join.
-\mod_zoom\event\join_meeting_button_clicked::create(array('context' => $context, 'objectid' => $zoom->id, 'other' => array('cmid' => $id, 'meetingid' => (int) $zoom->meeting_id, 'userishost' => $userishost)))->trigger();
+\mod_zoom\event\join_meeting_button_clicked::create(array('context' => $context, 'objectid' => $zoom->id, 'other' =>
+        array('cmid' => $id, 'meetingid' => (int) $zoom->meeting_id, 'userishost' => $userishost)))->trigger();
 redirect($nexturl);

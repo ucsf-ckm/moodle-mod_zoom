@@ -159,13 +159,16 @@ function xmldb_zoom_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2016040100, 'zoom');
     }
 
-    if ($oldversion < 2018071900) {
+    if ($oldversion < 2018091200) {
         // Removed apiurl option from settings.
         set_config('apiurl', null, 'mod_zoom');
-        upgrade_mod_savepoint(true, 2018071900, 'zoom');
-    }
 
-    if ($oldversion < 2018081700) {
+        // Set the starting number of API calls.
+        set_config('calls_left', 2000, 'mod_zoom');
+
+        // Set the time at which to start looking for meeting reports.
+        set_config('last_call_made_at', time() - (60 * 60 * 12), 'mod_zoom');
+
         // Start zoom table modifications.
         $table = new xmldb_table('zoom');
 
@@ -193,8 +196,62 @@ function xmldb_zoom_upgrade($oldversion) {
             $dbman->drop_field($table, $field);
         }
 
-        // Zoom savepoint reached.
-        upgrade_mod_savepoint(true, 2018081700, 'zoom');
+        // Define table zoom_meeting_details to be created.
+        $table = new xmldb_table('zoom_meeting_details');
+
+        // Adding fields to table zoom_meeting_details.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('uuid', XMLDB_TYPE_CHAR, '30', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('meeting_id', XMLDB_TYPE_INTEGER, '11', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('end_time', XMLDB_TYPE_INTEGER, '12', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('duration', XMLDB_TYPE_INTEGER, '12', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('start_time', XMLDB_TYPE_INTEGER, '12', null, null, null, null);
+        $table->add_field('topic', XMLDB_TYPE_CHAR, '300', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('total_minutes', XMLDB_TYPE_INTEGER, '12', null, null, null, '0');
+        $table->add_field('participants_count', XMLDB_TYPE_INTEGER, '4', null, null, null, '0');
+        $table->add_field('zoomid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table zoom_meeting_details.
+        $table->add_key('uuid_unique', XMLDB_KEY_UNIQUE, array('uuid'));
+        $table->add_key('id_primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('zoomid_foreign', XMLDB_KEY_FOREIGN, array('zoomid'), 'zoom', array('id'));
+        $table->add_key('meeting_unique', XMLDB_KEY_UNIQUE, array('meeting_id', 'uuid'));
+
+        // Conditionally launch create table for zoom_meeting_details.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table zoom_meeting_participants to be created.
+        $table = new xmldb_table('zoom_meeting_participants');
+
+        // Adding fields to table zoom_meeting_participants.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('zoomuserid', XMLDB_TYPE_INTEGER, '11', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('uuid', XMLDB_TYPE_CHAR, '30', null, null, null, null);
+        $table->add_field('user_email', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('join_time', XMLDB_TYPE_INTEGER, '12', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('leave_time', XMLDB_TYPE_INTEGER, '12', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('duration', XMLDB_TYPE_INTEGER, '12', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('attentiveness_score', XMLDB_TYPE_CHAR, '7', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('detailsid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, 'name');
+
+        // Adding keys to table zoom_meeting_participants.
+        $table->add_key('id_primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('user_by_meeting_key', XMLDB_KEY_UNIQUE, array('detailsid', 'zoomuserid'));
+        $table->add_key('detailsid_foreign', XMLDB_KEY_FOREIGN, array('detailsid'), 'zoom_meeting_details', array('id'));
+
+        // Adding indexes to table zoom_meeting_participants.
+        $table->add_index('userid', XMLDB_INDEX_NOTUNIQUE, array('userid'));
+
+        // Conditionally launch create table for zoom_meeting_participants.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_mod_savepoint(true, 2018091200, 'zoom');
     }
 
     return true;

@@ -25,7 +25,8 @@
  * Moodle is performing actions across all modules.
  *
  * @package    mod_zoom
- * @copyright  2015 UC Regents
+ * @copyright  2018 UC Regents
+ * @author     Rohan Khajuria
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -39,7 +40,7 @@ require_once($CFG->dirroot.'/mod/zoom/locallib.php');
  * Scheduled task to sychronize meeting data.
  *
  * @package   mod_zoom
- * @copyright 2015 UC Regents
+ * @copyright 2018 UC Regents
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class update_meetings extends \core\task\scheduled_task {
@@ -73,7 +74,7 @@ class update_meetings extends \core\task\scheduled_task {
         foreach ($zoomstoupdate as $zoom) {
             $gotinfo = false;
             try {
-                $response = $service->get_meeting_info($zoom);
+                $response = $service->get_meeting_webinar_info($zoom->meeting_id, $zoom->webinar);
                 $gotinfo = true;
             } catch (\moodle_exception $error) {
                 // Outputs error and then goes to next meeting.
