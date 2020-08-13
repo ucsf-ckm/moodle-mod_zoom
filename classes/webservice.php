@@ -693,4 +693,47 @@ class mod_zoom_webservice {
 
         return $uuid;
     }
+
+    /**
+     * Returns the download urls and their recording types for the cloud recording if one exists on zoom for a particular meeting id.
+     * There can be more than one url for the same meeting if the host stops the recording in the middle
+     * of the meeting and then starts recording again without ending the meeting.
+     *
+     * @link https://marketplace.zoom.us/docs/api-reference/zoom-api/cloud-recording/recordingget
+     * @param string $meetingid The string meeting ID.
+     * @return array Returns the list of recording URLs and the type of recording that is being sent back.
+     */
+    public function get_recording_url_list($meetingid) {
+        $url = 'meetings/' . $meetingid . '/recordings';
+        $settingsurl = 'meetings/' . $meetingid . '/recordings/settings';
+        try {
+            $response = $this->_make_call($url);
+            $settingsreponse = $this->_make_call($settingsurl);
+            $recordings = [];
+            // TODO: double check this code with meetings that were ended before the recording was stopped.
+            foreach ($response->recording_files as $rec) {
+                if (!empty($rec->play_url) && $rec->file_type !== 'TIMELINE' && $rec->file_type !== 'TRANSCRIPT') {
+                    // Only pick the video recording and audio only recordings.
+                    // The transcript is available in both of these, so the extra file is unnecessary.
+                    $recordinginfo = new stdClass();
+                    $recordinginfo->recordingid = $rec->id;
+                    $recordinginfo->meetinguuid = $rec->meeting_id;
+                    $recordinginfo->url = $rec->play_url;
+                    $recordinginfo->filetype = $rec->file_type;
+                    $recordinginfo->recordingtype = (!empty($rec->recording_type) && $rec->recording_type === 'audio_only') ?
+                        get_string('audio_only', 'mod_zoom') :
+                        get_string('video_and_audio', 'mod_zoom');
+                    $recordinginfo->passcode = $settingsreponse->password;
+                    $recordings[strtotime($rec->recording_start)][] = $recordinginfo;
+                }
+            }
+            ksort($recordings);
+            return $recordings;
+        } catch (moodle_exception $error) {
+            // Just return an empty array
+            // TODO: we could do some more meaningful error checking here if we need to.
+            return [];
+        }
+        return [];
+    }
 }

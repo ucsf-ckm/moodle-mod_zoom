@@ -151,6 +151,16 @@ if ($iszoommanager) {
     }
 }
 
+// Show recordings section if recordings exist or if user has edit capability and can add recordings.
+$recordinghtml = null;
+$recordingaddurl = new moodle_url('/mod/zoom/recordings.php', array('id' => $cm->id));
+$recordingaddbutton = html_writer::div(get_string('recordingview', 'mod_zoom'), 'btn btn-primary');
+$recordingaddbuttonhtml = html_writer::link($recordingaddurl, $recordingaddbutton, array('target' => '_blank'));
+$recordingaddhtml = html_writer::div($recordingaddbuttonhtml);
+$recordinghtml .= $recordingaddhtml;
+
+$table->data[] = array(get_string('recordings', 'mod_zoom'), $recordinghtml);
+
 // Generate add-to-calendar button if meeting was found and isn't recurring.
 if (!($showrecreate || $zoom->recurring)) {
     $icallink = new moodle_url('/mod/zoom/exportical.php', array('id' => $cm->id));
