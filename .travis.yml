@@ -21,11 +21,7 @@ php:
 env:
   global:
     - MOODLE_BRANCH=MOODLE_39_STABLE
-<<<<<<< HEAD
-    - PHPDOC_IGNORE_PATHS=jwt,tests/webservice_test.php
-=======
     - PHPDOC_IGNORE_PATHS=jwt,tests/mod_zoom_webservice_test.php
->>>>>>> origin/patch/CCLE-9525-alternative-host-logic
     - MUSTACHE_IGNORE_PATHS=templates/mobile_view_page.mustache
   matrix:
     - DB=pgsql
