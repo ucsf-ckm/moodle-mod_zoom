@@ -411,17 +411,10 @@ function zoom_userishost($zoom) {
     $zoomuserid = zoom_get_user_id(false);
     $alternativehosts = array();
     if (!is_null($zoom->alternative_hosts)) {
-<<<<<<< HEAD
-        $alternativehosts = explode(',', str_replace(';', ',', $zoom->alternative_hosts));
-    }
-
-    return ($zoomuserid === $zoom->host_id || in_array($USER->email, $alternativehosts));
-=======
         $alternativehosts = explode(',', str_replace(';', ',',
                 core_text::strtolower($zoom->alternative_hosts)));
     }
 
     return ($zoomuserid === $zoom->host_id ||
             in_array(core_text::strtolower($USER->email), $alternativehosts));
->>>>>>> origin/patch/CCLE-9525-alternative-host-logic
 }
