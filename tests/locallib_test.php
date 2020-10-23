@@ -86,5 +86,13 @@ class locallib_test extends advanced_testcase {
         // Test that user is the alternative host.
         $this->assertTrue(zoom_userishost($zoom));
         $this->assertNotEquals($hostid, $zoom->host_id);
+
+        // Make email uppercase.
+        $zoom = $this->getDataGenerator()->create_module('zoom',
+                ['course' => $course, 'alternative_hosts' => core_text::strtoupper($user->email)]);
+
+        // Test that user is the alternative host.
+        $this->assertTrue(zoom_userishost($zoom));
+        $this->assertNotEquals($hostid, $zoom->host_id);
     }
 }

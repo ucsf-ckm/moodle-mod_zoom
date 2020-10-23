@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for get_meeting_reports task class.
+ * Unit tests for mod_zoom_webservice class.
  *
  * @package    mod_zoom
  * @category   test
@@ -37,7 +37,7 @@ require_once($CFG->dirroot.'/mod/zoom/locallib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @group      mod_zoom
  */
-class webservice_test extends advanced_testcase {
+class mod_zoom_webservice_test extends advanced_testcase {
 
     private $notfoundmockcurl = null;
     private $invalidmockcurl = null;
