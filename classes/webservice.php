@@ -227,6 +227,8 @@ class mod_zoom_webservice {
                         throw new zoom_api_retry_failed_exception($response->message, $response->code);
                     }
                     $header = $curl->getResponse();
+                    // Header can have mixed case, normalize it.
+                    $header = array_change_key_case($header, CASE_LOWER);
                     $timediff = array_key_exists('retry-after', $header) ? (strtotime($header['retry-after']) - time()) : 1;
                     if ($timediff > self::MAX_RETRY_WAIT) {
                         throw new zoom_api_retry_failed_exception($response->message, $response->code);
