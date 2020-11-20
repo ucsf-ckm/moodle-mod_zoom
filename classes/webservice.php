@@ -226,8 +226,8 @@ class mod_zoom_webservice {
                     if ($this->makecallretries > self::MAX_RETRIES) {
                         throw new zoom_api_retry_failed_exception($response->message, $response->code);
                     }
-                    $curlinfo = $curl->get_info();
-                    $timediff = array_key_exists('Retry-After', $curlinfo) ? (strtotime($curlinfo['Retry-After']) - time()) : 1;
+                    $header = $curl->getResponse();
+                    $timediff = array_key_exists('retry-after', $header) ? (strtotime($header['retry-after']) - time()) : 1;
                     if ($timediff > self::MAX_RETRY_WAIT) {
                         throw new zoom_api_retry_failed_exception($response->message, $response->code);
                     }
