@@ -272,17 +272,7 @@ class mod_zoom_webservice {
         do {
             $callresult = null;
             $moredata = false;
-            if ($isreportcall) {
-                $numcalls = get_config('mod_zoom', 'calls_left');
-                if ($numcalls > 0) {
-                    $callresult = $this->_make_call($url, $data);
-                    set_config('calls_left', $numcalls - 1, 'mod_zoom');
-                    // We can only do 1 report calls a second.
-                    sleep(1);
-                }
-            } else {
-                $callresult = $this->_make_call($url, $data);
-            }
+            $callresult = $this->_make_call($url, $data);
 
             if ($callresult) {
                 $aggregatedata = array_merge($aggregatedata, $callresult->$datatoget);
