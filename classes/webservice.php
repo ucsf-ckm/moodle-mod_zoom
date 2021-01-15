@@ -79,6 +79,21 @@ class mod_zoom_webservice {
     );
 
     /**
+     * Default meeting_password_requirement object.
+     * @var array
+     */
+    const DEFAULT_MEETING_PASSWORD_REQUIREMENT = array(
+        'length' => 0,
+        'consecutive_characters_length' => 0,
+        'have_letter' => false,
+        'have_number' => false,
+        'have_upper_and_lower_characters' => false,
+        'have_special_character' => false,
+        'only_allow_numeric' => false,
+        'weak_enhance_detection' => false
+    );
+
+    /**
      * API key
      * @var string
      */
