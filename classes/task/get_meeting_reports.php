@@ -180,6 +180,8 @@ class get_meeting_reports extends \core\task\scheduled_task {
                     break;
                 }
             } catch (\Exception $e) {
+                mtrace($e->getMessage());
+                mtrace($e->getTraceAsString());
                 // Some unknown error, need to handle it so we can record
                 // where we left off.
                 if ($runningastask) {
@@ -375,10 +377,6 @@ class get_meeting_reports extends \core\task\scheduled_task {
 
         $meetings = $this->service->get_meetings($start, $end);
         $webinars = $this->service->get_webinars($start, $end);
-
-        $this->debugmsg('Found ' . count($meetings) . ' meetings');
-        $this->debugmsg('Found ' . count($webinars) . ' webinars');
-
         $allmeetings = array_merge($meetings, $webinars);
 
         return $allmeetings;
@@ -562,7 +560,18 @@ class get_meeting_reports extends \core\task\scheduled_task {
         // Copy values that are named the same.
         $normalizedmeeting->uuid = $meeting->uuid;
         $normalizedmeeting->topic = $meeting->topic;
-        $normalizedmeeting->duration = $meeting->duration;
+
+        // Dashboard API has duration as H:M:S while report has it in seconds.
+        if (strpos($meeting->duration, ':') !== false) {
+            // From https://stackoverflow.com/a/4834230/6001.
+            sscanf($meeting->duration, '%d:%d:%d', $hours, $minutes, $seconds);
+            // If $second is null, then there is no hour, so treat hour as
+            // minutes and minutes as seconds.
+            $normalizedmeeting->duration = isset($seconds) ? $hours * 3600 +
+                    $minutes * 60 + $seconds : $hours * 60 + $minutes;
+        } else {
+            $normalizedmeeting->duration = intval($meeting->duration);
+        }
 
         // Copy values that are named differently.
         $normalizedmeeting->participants_count = isset($meeting->participants) ?
