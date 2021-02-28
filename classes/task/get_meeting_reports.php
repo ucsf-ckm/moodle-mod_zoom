@@ -144,10 +144,11 @@ class get_meeting_reports extends \core\task\scheduled_task {
             if (!empty($hostuuids)) {
                 // Can only query on $hostuuids using Report API. So throw
                 // exception to skip Dashboard API.
-                throw new \Exception();
+                throw new \Exception('Querying $hostuuids; need to use Report API');
             }
             $allmeetings = $this->get_meetings_via_dashboard($start, $end);
         } catch (\Exception $e) {
+            mtrace($e->getMessage());
             // If ran into exception, then Dashboard API must have failed. Try
             // using Report API.
             $allmeetings = $this->get_meetings_via_reports($start, $end, $hostuuids);
