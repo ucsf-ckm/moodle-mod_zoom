@@ -344,27 +344,21 @@ class mod_zoom_mod_form extends moodleform_mod {
         $mform->addHelpButton('option_mute_upon_entry', 'option_mute_upon_entry', 'mod_zoom');
 
         // Check if there is any setting to be shown in the "host" fieldset.
-        $showschedulefor = count($scheduleusers) > 1 && $allowschedule; // Check if the size is greater than 1 because we add
-                                                                        // the editing/creating user by default.
+        $showschedulingprivilege = ($config->showschedulingprivilege != ZOOM_SCHEDULINGPRIVILEGE_DISABLE) &&
+                count($scheduleusers) > 1 && $allowschedule; // Check if the size is greater than 1 because
+                                                             // we add the editing/creating user by default.
         $showalternativehosts = ($config->showalternativehosts != ZOOM_ALTERNATIVEHOSTS_DISABLE);
-        if ($showschedulefor || $showalternativehosts) {
+        if ($showschedulingprivilege || $showalternativehosts) {
 
             // Adding the "host" fieldset, where all settings relating to defining the meeting host are shown.
             $mform->addElement('header', 'general', get_string('host', 'mod_zoom'));
 
-            // Adding the "host" intro to explain what this section is about.
-            if ($showschedulefor && $showalternativehosts) {
-                $hostintrostring = get_string('hostintro', 'zoom',
-                        array('mechanism' => get_string('hostintromechanisms', 'mod_zoom')));
-            } else {
-                $hostintrostring = get_string('hostintro', 'zoom',
-                        array('mechanism' => get_string('hostintromechanism', 'mod_zoom')));
-            }
-            $mform->addElement('static', 'hostintro', '', $hostintrostring);
-
             // Supplementary feature: Alternative hosts.
             // Only show if the admin did not disable this feature completely.
             if ($showalternativehosts) {
+                // Explain alternativehosts.
+                $mform->addElement('static', 'hostintro', '', get_string('hostintro', 'zoom'));
+
                 // If the admin wants to show the plain input field.
                 if ($config->showalternativehosts == ZOOM_ALTERNATIVEHOSTS_INPUTFIELD) {
                     // Add alternative hosts.
