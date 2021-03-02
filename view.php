@@ -31,7 +31,7 @@ require_once(dirname(__FILE__).'/lib.php');
 require_once(dirname(__FILE__).'/locallib.php');
 require_once(dirname(__FILE__).'/../../lib/moodlelib.php');
 
-$config = get_config('mod_zoom');
+$config = get_config('zoom');
 
 list($course, $cm, $zoom) = zoom_get_instance_setup();
 
@@ -152,9 +152,23 @@ if ($iszoommanager) {
     $sessions->colspan = $numcolumns;
     $table->data[] = array($sessions);
 
-    // Display alternate hosts if they exist.
-    if (!empty($zoom->alternative_hosts)) {
-        $table->data[] = array(get_string('alternative_hosts', 'mod_zoom'), $zoom->alternative_hosts);
+    // Display alternate hosts if they exist and if the admin did not disable the feature.
+    if ($config->showalternativehosts != ZOOM_ALTERNATIVEHOSTS_DISABLE && !empty($zoom->alternative_hosts)) {
+        // If the admin did show the alternative hosts user picker, we can show the real names of the users as they exist on Moode.
+        if ($config->showalternativehosts == ZOOM_ALTERNATIVEHOSTS_USERPICKER) {
+            // Get the full user objects for the given set of alternative hosts.
+            $alternativehostusers = zoom_get_users_from_alternativehosts($alternativehosts);
+
+            // Create an array of alternative host fullnames.
+            $alternativehostuserfullnames = array_map('fullname', $alternativehostusers);
+
+            // Output the concatenated list of alternative host fullnames.
+            $table->data[] = array(get_string('alternative_hosts', 'mod_zoom'), implode(', ', $alternativehostuserfullnames));
+
+            // Otherwise we stick with a plain list of email addresses as these might also be from outside of MOodle.
+        } else {
+            $table->data[] = array(get_string('alternative_hosts', 'mod_zoom'), $zoom->alternative_hosts);
+        }
     }
 }
 
@@ -180,7 +194,7 @@ $haspassword = (isset($zoom->password) && $zoom->password !== '');
 $strhaspass = ($haspassword) ? $stryes : $strno;
 $table->data[] = array($strpassprotect, $strhaspass);
 
-if ($userishost && $haspassword || get_config('mod_zoom', 'displaypassword')) {
+if ($userishost && $haspassword || get_config('zoom', 'displaypassword')) {
     $table->data[] = array($strpassword, $zoom->password);
 }
 
