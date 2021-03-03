@@ -63,13 +63,6 @@ define('ZOOM_ENCRYPTION_ALWAYSSHOW', 2);
 // Encryption types. String values for Zoom API.
 define('ZOOM_ENCRYPTION_TYPE_ENHANCED', 'enhanced_encryption');
 define('ZOOM_ENCRYPTION_TYPE_E2EE', 'e2ee');
-// Alternative hosts options.
-define('ZOOM_ALTERNATIVEHOSTS_DISABLE', 0);
-define('ZOOM_ALTERNATIVEHOSTS_INPUTFIELD', 1);
-define('ZOOM_ALTERNATIVEHOSTS_USERPICKER', 2);
-// Scheduling privilege options.
-define('ZOOM_SCHEDULINGPRIVILEGE_DISABLE', 0);
-define('ZOOM_SCHEDULINGPRIVILEGE_ENABLE', 1);
 
 /**
  * Entry not found on Zoom.
@@ -344,7 +337,7 @@ function zoom_get_sessions_for_display($meetingid) {
  * @return array Array of booleans: [in progress, available, finished].
  */
 function zoom_get_state($zoom) {
-    $config = get_config('zoom');
+    $config = get_config('mod_zoom');
     $now = time();
 
     $firstavailable = $zoom->start_time - ($config->firstabletojoin * 60);
@@ -544,79 +537,4 @@ function zoom_create_passcode_description($meetingpasswordrequirement) {
 
     $description .= get_string('password_max_length', 'mod_zoom');
     return $description;
-}
-
-/**
- * Creates an array of users who can be selected as alternative host in a given context.
- *
- * @param context $context The context to be used.
- *
- * @return array Array of users (mail => fullname).
- */
-function zoom_get_selectable_alternative_hosts_list(context $context) {
-    // Get selectable alternative host users based on the capability.
-    $users = get_enrolled_users($context, 'mod/zoom:eligiblealternativehost', 0, 'u.*', 'lastname');
-
-    // Create array of users.
-    $selectablealternativehosts = array();
-
-    // Create Zoom API instance.
-    $service = new mod_zoom_webservice();
-
-    // Iterate over selectable alternative host users.
-    foreach ($users as $u) {
-        // Note: Basically, if this is the user's own data row, the data row should be skipped.
-        // But this would then not cover the case when a user is scheduling the meeting _for_ another user
-        // and wants to be an alternative host himself.
-        // As this would have to be handled at runtime in the browser, we just offer all users with the
-        // capability as selectable and leave this aspect as possible improvement for the future.
-        // At least, Zoom does not care if the user who is the host adds himself as alternative host as well.
-
-        // Verify that the user really has a Zoom account.
-        $zoomuser = $service->get_user($u->email);
-        if ($zoomuser !== false) {
-            // Add user to array of users.
-            $selectablealternativehosts[$u->email] = fullname($u);
-        }
-    }
-
-    return $selectablealternativehosts;
-}
-
-/**
- * Creates a string of roles who can be selected as alternative host in a given context.
- *
- * @param context $context The context to be used.
- *
- * @return string The string of roles.
- */
-function zoom_get_selectable_alternative_hosts_rolestring(context $context) {
-    // Get selectable alternative host users based on the capability.
-    $roles = get_role_names_with_caps_in_context($context, array('mod/zoom:eligiblealternativehost'));
-
-    // Compose string.
-    $rolestring = implode(', ', $roles);
-
-    return $rolestring;
-}
-
-/**
- * Gets the full user objects for a given set of alternative hosts.
- *
- * @param array $alternativehosts The array of alternative hosts email addresses.
- *
- * @return array The array of user objects.
- */
-function zoom_get_users_from_alternativehosts(array $alternativehosts) {
-    global $DB;
-
-    // Get the user objects from the DB.
-    list($insql, $inparams) = $DB->get_in_or_equal($alternativehosts);
-    $sql = 'SELECT *
-            FROM {user}
-            WHERE email '.$insql.'
-            ORDER BY lastname ASC';
-    $users = $DB->get_records_sql($sql, $inparams);
-
-    return $users;
 }

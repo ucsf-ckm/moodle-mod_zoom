@@ -45,7 +45,7 @@ class mod_zoom_mod_form extends moodleform_mod {
      */
     public function definition() {
         global $PAGE, $USER;
-        $config = get_config('zoom');
+        $config = get_config('mod_zoom');
         $PAGE->requires->js_call_amd("mod_zoom/form", 'init');
 
         $isnew = empty($this->_cm);
@@ -343,68 +343,29 @@ class mod_zoom_mod_form extends moodleform_mod {
         $mform->setDefault('option_mute_upon_entry', $config->defaultmuteuponentryoption);
         $mform->addHelpButton('option_mute_upon_entry', 'option_mute_upon_entry', 'mod_zoom');
 
-        // Check if there is any setting to be shown in the "host" fieldset.
-        $showschedulingprivilege = ($config->showschedulingprivilege != ZOOM_SCHEDULINGPRIVILEGE_DISABLE) &&
-                count($scheduleusers) > 1 && $allowschedule; // Check if the size is greater than 1 because
-                                                             // we add the editing/creating user by default.
-        $showalternativehosts = ($config->showalternativehosts != ZOOM_ALTERNATIVEHOSTS_DISABLE);
-        if ($showschedulingprivilege || $showalternativehosts) {
+        // Adding the "host" fieldset, where all settings relating to defining the meeting host are shown.
+        $mform->addElement('header', 'general', get_string('host', 'mod_zoom'));
 
-            // Adding the "host" fieldset, where all settings relating to defining the meeting host are shown.
-            $mform->addElement('header', 'general', get_string('host', 'mod_zoom'));
-
-            // Adding the "host" intro to explain what this section is about.
-            if ($showschedulingprivilege && $showalternativehosts) {
-                $hostintrostring = get_string('hostintro', 'zoom',
-                        array('mechanism' => get_string('hostintromechanisms', 'mod_zoom')));
+        // Add Schedule for if current user is able to.
+        // Check if the size is greater than 1 because we add the editing/creating user by default.
+        if (count($scheduleusers) > 1 && $allowschedule) {
+            $mform->addElement('select', 'schedule_for', get_string('schedulefor', 'zoom'), $scheduleusers);
+            $mform->setType('schedule_for', PARAM_EMAIL);
+            if (!$isnew) {
+                $mform->disabledIf('schedule_for', 'change_schedule_for');
+                $mform->addElement('checkbox', 'change_schedule_for', get_string('changehost', 'zoom'));
+                $mform->setDefault('schedule_for', strtolower($service->get_user($this->current->host_id)->email));
             } else {
-                $hostintrostring = get_string('hostintro', 'zoom',
-                        array('mechanism' => get_string('hostintromechanism', 'mod_zoom')));
-            }
-            $mform->addElement('static', 'hostintro', '', $hostintrostring);
-
-            // Supplementary feature: Alternative hosts.
-            // Only show if the admin did not disable this feature completely.
-            if ($showalternativehosts) {
-                // If the admin wants to show the plain input field.
-                if ($config->showalternativehosts == ZOOM_ALTERNATIVEHOSTS_INPUTFIELD) {
-                    // Add alternative hosts.
-                    $mform->addElement('text', 'alternative_hosts', get_string('alternative_hosts', 'zoom'), array('size' => '64'));
-                    $mform->setType('alternative_hosts', PARAM_TEXT);
-                    $mform->addHelpButton('alternative_hosts', 'alternative_hosts', 'zoom');
-
-                    // If the admin wants to show the user picker.
-                } else if ($config->showalternativehosts == ZOOM_ALTERNATIVEHOSTS_USERPICKER) {
-                    // Get selectable alternative host users based on the capability.
-                    $alternativehostschoices = zoom_get_selectable_alternative_hosts_list($this->context);
-                    // Create autocomplete widget.
-                    $alternativehostsoptions = array(
-                            'multiple' => true,
-                            'showsuggestions' => true,
-                            'placeholder' => get_string('alternative_hosts_picker_placeholder', 'zoom'),
-                            'noselectionstring' => get_string('alternative_hosts_picker_noneselected', 'zoom'));
-                    $mform->addElement('autocomplete', 'alternative_hosts_picker', get_string('alternative_hosts', 'zoom'),
-                            $alternativehostschoices, $alternativehostsoptions);
-                    $mform->setType('alternative_hosts_picker', PARAM_EMAIL);
-                    $mform->addHelpButton('alternative_hosts_picker', 'alternative_hosts_picker', 'zoom');
-                }
-            }
-
-            // Supplementary feature: Scheduling privilege.
-            // Only show if the admin did not disable this feature completely and if current user is able to use it.
-            if ($showschedulingprivilege) {
-                $mform->addElement('select', 'schedule_for', get_string('schedulefor', 'zoom'), $scheduleusers);
-                $mform->setType('schedule_for', PARAM_EMAIL);
-                if (!$isnew) {
-                    $mform->disabledIf('schedule_for', 'change_schedule_for');
-                    $mform->addElement('checkbox', 'change_schedule_for', get_string('changehost', 'zoom'));
-                    $mform->setDefault('schedule_for', strtolower($service->get_user($this->current->host_id)->email));
-                } else {
-                    $mform->setDefault('schedule_for', strtolower($USER->email));
-                }
-                $mform->addHelpButton('schedule_for', 'schedulefor', 'zoom');
+                $mform->setDefault('schedule_for', strtolower($USER->email));
             }
         }
+
+        // Add alternative hosts.
+        $mform->addElement('text', 'alternative_hosts', get_string('alternative_hosts', 'zoom'), array('size' => '64'));
+        $mform->setType('alternative_hosts', PARAM_TEXT);
+        // Set the maximum field length to 255 because that's the limit on Zoom's end.
+        $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        $mform->addHelpButton('alternative_hosts', 'alternative_hosts', 'zoom');
 
         // Add meeting id.
         $mform->addElement('hidden', 'meeting_id', -1);
@@ -427,68 +388,6 @@ class mod_zoom_mod_form extends moodleform_mod {
     }
 
     /**
-     * Allows module to modify the data returned by form get_data().
-     * This method is also called in the bulk activity completion form.
-     *
-     * Only available on moodleform_mod.
-     *
-     * @param stdClass $data the form data to be modified.
-     */
-    public function data_postprocessing($data) {
-        parent::data_postprocessing($data);
-
-        // Get config.
-        $config = get_config('zoom');
-
-        // If the admin did show the alternative hosts user picker.
-        if ($config->showalternativehosts == ZOOM_ALTERNATIVEHOSTS_USERPICKER) {
-            // If there was at least one alternative host selected.
-            if (count($data->alternative_hosts_picker) > 0) {
-                // Populate the alternative_hosts field with a concatenated string of email addresses.
-                // This is done as this the format which Zoom expects and alternative_hosts is the field to store the data
-                // in mod_zoom.
-                // The alternative host user picker is just an add-on to help teachers to fill this field.
-                $data->alternative_hosts = implode(',', $data->alternative_hosts_picker);
-
-                // If there wasn't any alternative host selected.
-            } else {
-                $data->alternative_hosts = '';
-            }
-        }
-    }
-
-    /**
-     * Allows module to modify data returned by get_moduleinfo_data() or prepare_new_moduleinfo_data() before calling set_data()
-     * This method is also called in the bulk activity completion form.
-     *
-     * Only available on moodleform_mod.
-     *
-     * @param array $default_values passed by reference
-     */
-    public function data_preprocessing(&$defaultvalues) {
-        parent::data_preprocessing($defaultvalues);
-
-        // Get config.
-        $config = get_config('zoom');
-
-        // If the admin wants to show the alternative hosts user picker.
-        if ($config->showalternativehosts == ZOOM_ALTERNATIVEHOSTS_USERPICKER) {
-            // If there is at least one alternative host set.
-            if (isset($defaultvalues['alternative_hosts']) && strlen($defaultvalues['alternative_hosts']) > 0) {
-                // Populate the alternative_hosts_picker field with an exploded array of email addresses.
-                // This is done as alternative_hosts is the field to store the data in mod_zoom and
-                // the alternative host user picker is just an add-on to help teachers to fill this field.
-
-                // According to the documentation, the Zoom API separates the email addresses with commas,
-                // but we also want to deal with semicolon-separated lists just in case.
-                $defaultvalues['alternative_hosts_picker'] =
-                        explode(',', str_replace(';', ',', $defaultvalues['alternative_hosts']));
-            }
-        }
-    }
-
-
-    /**
      * More validation on form data.
      * See documentation in lib/formslib.php.
      *
@@ -500,7 +399,7 @@ class mod_zoom_mod_form extends moodleform_mod {
         global $CFG, $USER;
         $errors = array();
 
-        $config = get_config('zoom');
+        $config = get_config('mod_zoom');
 
         // Only check for scheduled meetings.
         if (empty($data['recurring'])) {
@@ -537,31 +436,12 @@ class mod_zoom_mod_form extends moodleform_mod {
                 $errors['schedule_for'] = get_string('invalidscheduleuser', 'mod_zoom');
             }
         }
-
-        // Supplementary feature: Alternative hosts.
-        // Only validate if the admin did not disable this feature completely.
-        if ($config->showalternativehosts != ZOOM_ALTERNATIVEHOSTS_DISABLE) {
-            // If the admin did show the plain input field.
-            if ($config->showalternativehosts == ZOOM_ALTERNATIVEHOSTS_INPUTFIELD) {
-                // Check if the listed alternative hosts are valid users on Zoom.
-                $alternativehosts = explode(',', str_replace(';', ',', $data['alternative_hosts']));
-                foreach ($alternativehosts as $alternativehost) {
-                    if (!($service->get_user($alternativehost))) {
-                        $errors['alternative_hosts'] = get_string('zoomerr_alternativehostusernotfound', 'zoom', $alternativehost);
-                        break;
-                    }
-                }
-
-                // If the admin did show the user picker.
-            } else if ($config->showalternativehosts == ZOOM_ALTERNATIVEHOSTS_USERPICKER) {
-                // Check if the picked alternative hosts are valid users on Zoom.
-                foreach ($data['alternative_hosts_picker'] as $alternativehost) {
-                    if (!($service->get_user($alternativehost))) {
-                        $errors['alternative_hosts_picker'] =
-                                get_string('zoomerr_alternativehostusernotfound', 'zoom', $alternativehost);
-                        break;
-                    }
-                }
+        // Check if the listed alternative hosts are valid users on Zoom.
+        $alternativehosts = explode(',', str_replace(';', ',', $data['alternative_hosts']));
+        foreach ($alternativehosts as $alternativehost) {
+            if (!($service->get_user($alternativehost))) {
+                $errors['alternative_hosts'] = 'User ' . $alternativehost . ' was not found on Zoom.';
+                break;
             }
         }
 
