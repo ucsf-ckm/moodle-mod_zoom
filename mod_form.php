@@ -353,19 +353,12 @@ class mod_zoom_mod_form extends moodleform_mod {
             // Adding the "host" fieldset, where all settings relating to defining the meeting host are shown.
             $mform->addElement('header', 'general', get_string('host', 'mod_zoom'));
 
-            // Adding the "host" intro to explain what this section is about.
-            if ($showschedulingprivilege && $showalternativehosts) {
-                $hostintrostring = get_string('hostintro', 'zoom',
-                        array('mechanism' => get_string('hostintromechanisms', 'mod_zoom')));
-            } else {
-                $hostintrostring = get_string('hostintro', 'zoom',
-                        array('mechanism' => get_string('hostintromechanism', 'mod_zoom')));
-            }
-            $mform->addElement('static', 'hostintro', '', $hostintrostring);
-
             // Supplementary feature: Alternative hosts.
             // Only show if the admin did not disable this feature completely.
             if ($showalternativehosts) {
+                // Explain alternativehosts.
+                $mform->addElement('static', 'hostintro', '', get_string('hostintro', 'zoom'));
+
                 // If the admin wants to show the plain input field.
                 if ($config->showalternativehosts == ZOOM_ALTERNATIVEHOSTS_INPUTFIELD) {
                     // Add alternative hosts.
