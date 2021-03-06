@@ -108,6 +108,12 @@ if ($ADMIN->fulltree) {
             15, $jointimeselect);
     $settings->add($firstabletojoin);
 
+    $displayleadtime = new admin_setting_configcheckbox('zoom/displayleadtime',
+            get_string('displayleadtime', 'mod_zoom'),
+            get_string('displayleadtime_desc', 'mod_zoom'), 0, 1, 0);
+    $settings->add($displayleadtime);
+    $settings->hide_if('zoom/displayleadtime', 'zoom/firstabletojoin', 'eq', 0);
+
     $displaypassword = new admin_setting_configcheckbox('zoom/displaypassword',
             get_string('displaypassword', 'mod_zoom'),
             get_string('displaypassword_help', 'mod_zoom'), 0, 1, 0);
@@ -162,6 +168,33 @@ if ($ADMIN->fulltree) {
             ZOOM_ALTERNATIVEHOSTS_INPUTFIELD,
             $alternativehostschoices);
     $settings->add($offeralternativehosts);
+
+    $capacitywarningchoices = array(ZOOM_CAPACITYWARNING_DISABLE => get_string('meetingcapacitywarning_disable', 'mod_zoom'),
+            ZOOM_CAPACITYWARNING_ENABLE => get_string('meetingcapacitywarning_enable', 'mod_zoom'));
+    $offercapacitywarning = new admin_setting_configselect('zoom/showcapacitywarning',
+            get_string('meetingcapacitywarning', 'mod_zoom'),
+            get_string('meetingcapacitywarning_desc', 'mod_zoom'),
+            ZOOM_CAPACITYWARNING_ENABLE,
+            $capacitywarningchoices);
+    $settings->add($offercapacitywarning);
+
+    $allmeetingschoices = array(ZOOM_ALLMEETINGS_DISABLE => get_string('allmeetings_disable', 'mod_zoom'),
+            ZOOM_ALLMEETINGS_ENABLE => get_string('allmeetings_enable', 'mod_zoom'));
+    $offerallmeetings = new admin_setting_configselect('zoom/showallmeetings',
+            get_string('allmeetings', 'mod_zoom'),
+            get_string('allmeetings_desc', 'mod_zoom'),
+            ZOOM_ALLMEETINGS_ENABLE,
+            $allmeetingschoices);
+    $settings->add($offerallmeetings);
+
+    $downloadicalchoices = array(ZOOM_DOWNLOADICAL_DISABLE => get_string('downloadical_disable', 'mod_zoom'),
+            ZOOM_DOWNLOADICAL_ENABLE => get_string('downloadical_enable', 'mod_zoom'));
+    $offerdownloadical = new admin_setting_configselect('zoom/showdownloadical',
+            get_string('downloadical', 'mod_zoom'),
+            get_string('downloadical_desc', 'mod_zoom'),
+            ZOOM_DOWNLOADICAL_ENABLE,
+            $downloadicalchoices);
+    $settings->add($offerdownloadical);
 
     // Default Zoom settings.
     $settings->add(new admin_setting_heading('zoom/defaultsettings',

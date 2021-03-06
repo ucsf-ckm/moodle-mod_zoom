@@ -70,6 +70,15 @@ define('ZOOM_ALTERNATIVEHOSTS_PICKER', 2);
 // Scheduling privilege options.
 define('ZOOM_SCHEDULINGPRIVILEGE_DISABLE', 0);
 define('ZOOM_SCHEDULINGPRIVILEGE_ENABLE', 1);
+// All meetings options.
+define('ZOOM_ALLMEETINGS_DISABLE', 0);
+define('ZOOM_ALLMEETINGS_ENABLE', 1);
+// Download iCal options.
+define('ZOOM_DOWNLOADICAL_DISABLE', 0);
+define('ZOOM_DOWNLOADICAL_ENABLE', 1);
+// Capacity warning options.
+define('ZOOM_CAPACITYWARNING_DISABLE', 0);
+define('ZOOM_CAPACITYWARNING_ENABLE', 1);
 
 /**
  * Entry not found on Zoom.
@@ -632,6 +641,7 @@ function zoom_get_nonusers_from_alternativehosts(array $alternativehosts) {
     global $DB;
 
     // Get the non-Moodle user mail addresses by checking which one does not exist in the DB.
+    $alternativehostnonusers = array();
     list($insql, $inparams) = $DB->get_in_or_equal($alternativehosts);
     $sql = 'SELECT email
             FROM {user}
@@ -644,9 +654,125 @@ function zoom_get_nonusers_from_alternativehosts(array $alternativehosts) {
         }
     }
 
-    if (count ($alternativehostnonusers) > 0) {
-        return $alternativehostnonusers;
+    return $alternativehostnonusers;
+}
+
+/**
+ * Get the unavailability note based on the Zoom plugin configuration.
+ *
+ * @param object $zoom The Zoom meeting object.
+ * @param bool|null $finished The function needs to know if the meeting is already finished.
+ *                       You can provide this information, if already available, to the function.
+ *                       Otherwise it will determine it with a small overhead.
+ *
+ * @return string The unavailability note.
+ */
+function zoom_get_unavailability_note(object $zoom, $finished = null) {
+    // Get config.
+    $config = get_config('zoom');
+
+    // Get the plain unavailable string.
+    $strunavailable = get_string('unavailable', 'mod_zoom');
+
+    // If this is a recurring meeting, just use the plain unavailable string.
+    if (!empty($zoom->recurring)) {
+        $unavailabilitynote = $strunavailable;
+
+        // Otherwise we add some more information to the unavailable string.
     } else {
-        return array();
+        // If we don't have the finished information yet, get it with a small overhead.
+        if ($finished === null) {
+            list($inprogress, $available, $finished) = zoom_get_state($zoom);
+        }
+
+        // If this meeting is still pending.
+        if ($finished !== true) {
+            // If the admin wants to show the leadtime.
+            if (!empty($config->displayleadtime) && $config->firstabletojoin > 0) {
+                $unavailabilitynote = $strunavailable . '<br />' .
+                        get_string('unavailablefirstjoin', 'mod_zoom', array('mins' => ($config->firstabletojoin)));
+
+                // Otherwise.
+            } else {
+                $unavailabilitynote = $strunavailable . '<br />' . get_string('unavailablenotstartedyet', 'mod_zoom');
+            }
+
+            // Otherwise, the meeting has finished.
+        } else {
+            $unavailabilitynote = $strunavailable . '<br />' . get_string('unavailablefinished', 'mod_zoom');
+        }
     }
+
+    return $unavailabilitynote;
+}
+
+/**
+ * Gets the meeting capacity of a given Zoom user.
+ * Please note: This function does not check if the Zoom user really exists, this has to be checked before calling this function.
+ *
+ * @param string $zoomhostid The Zoom ID of the host.
+ * @param boolean $iswebinar The meeting is a webinar.
+ *
+ * @return int|false The meeting capacity of the Zoom user or false if the user does not have any meeting capacity at all.
+ */
+function zoom_get_meeting_capacity(string $zoomhostid, bool $iswebinar = false) {
+    // Get Zoom API service instance.
+    $service = new mod_zoom_webservice();
+
+    // Get the 'feature' section of the user's Zoom settings.
+    $userfeatures = $service->_get_user_settings($zoomhostid)->feature;
+
+    // If this is a webinar.
+    if ($iswebinar == true) {
+        // Get the 'webinar_capacity' value.
+        $meetingcapacity = $userfeatures->webinar_capacity;
+
+        // If the user does not have a webinar capacity for any reason, return.
+        if (is_int($meetingcapacity) == false || $meetingcapacity <= 0) {
+            return false;
+        }
+
+        // If this isn't a webinar but a regular meeting.
+    } else {
+        // Get the 'meeting_capacity' value.
+        $meetingcapacity = $userfeatures->meeting_capacity;
+
+        // If the user does not have a meeting capacity for any reason, return.
+        if (is_int($meetingcapacity) == false || $meetingcapacity <= 0) {
+            return false;
+        }
+
+        // Check if the user has a 'large_meeting' license and, if yes, if this is bigger than the given 'meeting_capacity' value;
+        if ($userfeatures->large_meeting === true &&
+                isset($userfeatures->large_meeting_capacity) &&
+                is_int($userfeatures->large_meeting_capacity) != false &&
+                $userfeatures->large_meeting_capacity > $userfeatures->meeting_capacity) {
+            $meetingcapacity = $userfeatures->large_meeting_capacity;
+        }
+    }
+
+    return $meetingcapacity;
+}
+
+/**
+ * Gets the number of eligible meeting participants in a given context.
+ * Please note: This function only covers users who are enrolled into the given context.
+ * It does _not_ include users who have the necessary capability on a higher context without being enrolled.
+ *
+ * @param context $context The context which we want to check.
+ *
+ * @return int The number of eligible meeting participants.
+ */
+function zoom_get_eligible_meeting_participants(context $context) {
+    global $DB;
+
+    // Compose SQL query.
+    $sqlsnippets = get_enrolled_with_capabilities_join($context, '', 'mod/zoom:view', 0, true);
+    $sql = 'SELECT count(DISTINCT u.id)
+            FROM {user} u '.$sqlsnippets->joins.' WHERE '.$sqlsnippets->wheres;
+
+    // Run query and count records.
+    $eligibleparticipantcount = $DB->count_records_sql($sql, $sqlsnippets->params);
+
+    return $eligibleparticipantcount;
 }
