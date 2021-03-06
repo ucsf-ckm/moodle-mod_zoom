@@ -564,7 +564,7 @@ class get_meeting_reports extends \core\task\scheduled_task {
 
         // Dashboard API has duration as H:M:S while report has it in minutes.
         $timeparts = explode(':', $meeting->duration);
-        
+
         // Convert duration into minutes.
         if (count($timeparts) === 1) {
             // Time is already in minutes.
@@ -574,7 +574,7 @@ class get_meeting_reports extends \core\task\scheduled_task {
             $normalizedmeeting->duration = $timeparts[0];
         } else {
             // Time is in HH:MM:SS format.
-            $normalizedmeeting->duration = 60*$timeparts[0] + $timeparts[1];
+            $normalizedmeeting->duration = 60 * $timeparts[0] + $timeparts[1];
         }
 
         // Copy values that are named differently.
